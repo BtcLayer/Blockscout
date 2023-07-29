@@ -1,0 +1,7 @@
+json
+pandas
+datetime
+statsmodels
+numpy
+requests
+seaborn
