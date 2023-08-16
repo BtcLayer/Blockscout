@@ -1,33 +1,49 @@
-# Data Stitching and Analysis Readme
+<h1 align="center">BlockScout</h1>
+<p align="center">Blockchain Explorer for inspecting and analyzing EVM Chains.</p>
+<div align="center">
 
-This repository contains three Jupyter Notebook files that are designed to work together to perform data stitching and analysis on Binance trading data.
+[![Blockscout](https://github.com/blockscout/blockscout/workflows/Blockscout/badge.svg?branch=master)](https://github.com/blockscout/blockscout/actions)
+[![](https://dcbadge.vercel.app/api/server/blockscout?style=flat)](https://discord.gg/blockscout)
 
-## Raw Data Folder
+</div>
 
-The `Raw data` folder within this repository contains all the unprocessed and processed data required for the data stitching and analysis process. It is organized as follows:
 
-- `pratham opening.csv`: This CSV file contains the raw data of opening trades.
-- `pratham closing.csv`: This CSV file contains the raw data of closing trades.
+BlockScout provides a comprehensive, easy-to-use interface for users to view, confirm, and inspect transactions on EVM (Ethereum Virtual Machine) blockchains. This includes Ethereum Mainnet, Ethereum Classic, Optimism, Gnosis Chain and many other **Ethereum testnets, private networks, L2s and sidechains**.
 
-Additionally, within the `Raw data` folder, there are further asset-wise subfolders that store the data after processing:
+See our [project documentation](https://docs.blockscout.com/) for detailed information and setup instructions.
 
-- `Year(2021).csv`: This type of file contains the CSV file with OHLC data organized on a yearly basis for that asset.
-- `Year(2021)`: This type of folder contains asset-wise CSV files with OHLC data organized on a monthly basis.
+For questions, comments and feature requests see the [discussions section](https://github.com/blockscout/blockscout/discussions) or via [Discord](https://discord.com/invite/blockscout).
 
-The data stored in these folders is the result of the data stitching process performed by the `Stitching Data.ipynb` notebook.
+## About BlockScout
 
-## 1. Stitching Data.ipynb
+BlockScout allows users to search transactions, view accounts and balances, verify and interact with smart contracts and view and interact with applications on the Ethereum network including many forks, sidechains, L2s and testnets.
 
-**Description:**  
-`Stitching Data.ipynb` is a Jupyter Notebook responsible for stitching together the monthly asset-wise data from Binance into year-wise CSV files containing OHLC (Open, High, Low, Close) data. It fetches historical data for each asset for different months, and then combines and organizes it into yearly files. The resulting CSV files provide a comprehensive collection of OHLC data for each asset for each year, making it convenient for subsequent analysis.
+Blockscout is an open-source alternative to centralized, closed source block explorers such as Etherscan, Etherchain and others.  As Ethereum sidechains and L2s continue to proliferate in both private and public settings, transparent, open-source tools are needed to analyze and validate all transactions.
 
-## 2. Final Trades.ipynb
+## Supported Projects
 
-**Description:**  
-`Final Trades.ipynb` is a Jupyter Notebook designed to process opening and closing trades data in CSV format. The notebook compiles all the trades, including the trade price, asset amount, and other relevant trade details, into a final output file named `final_trades.csv`. This CSV file serves as a complete record of all the trading activity conducted over a specific period.
+BlockScout currently supports several hundred chains and rollups throughout the greater blockchain ecosystem. Ethereum, Cosmos, Polkadot, Avalanche, Near and many others include Blockscout integrations. [A comprehensive list is available here](https://docs.blockscout.com/about/projects). If your project is not listed, please submit a PR or [contact the team in Discord](https://discord.com/invite/blockscout).
 
-## 3. Basic Analysis.ipynb
+## Getting Started
 
-**Description:**  
-`Basic Analysis.ipynb` is a Jupyter Notebook responsible for conducting basic analysis on the trades data recorded in `final_trades.csv`. It calculates the Realized PnL (Profit and Loss), Net Position left after all trades, and the Average price of the position taken for each trader (identified by trader ID) and each asset. The notebook presents the analysis results in an organized manner, providing valuable insights into the trading performance of individual traders and assets.
+See the [project documentation](https://docs.blockscout.com/) for instructions:
 
+- [Requirements](https://docs.blockscout.com/for-developers/information-and-settings/requirements)
+- [Ansible deployment](https://docs.blockscout.com/for-developers/ansible-deployment)
+- [Manual deployment](https://docs.blockscout.com/for-developers/manual-deployment)
+- [ENV variables](https://docs.blockscout.com/for-developers/information-and-settings/env-variables)
+- [Configuration options](https://docs.blockscout.com/for-developers/configuration-options)
+
+## Acknowledgements
+
+We would like to thank the [EthPrize foundation](http://ethprize.io/) for their funding support.
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution and pull request protocol. We expect contributors to follow our [code of conduct](CODE_OF_CONDUCT.md) when submitting code or comments.
+
+## License
+
+[![License: GPL v3.0](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+
+This project is licensed under the GNU General Public License v3.0. See the [LICENSE](LICENSE) file for details.
