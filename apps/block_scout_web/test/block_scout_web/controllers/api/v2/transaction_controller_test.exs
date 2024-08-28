@@ -2,10 +2,11 @@ defmodule BlockScoutWeb.API.V2.TransactionControllerTest do
   use BlockScoutWeb.ConnCase
 
   import Explorer.Chain, only: [hash_to_lower_case_string: 1]
+  import Mox
 
   alias BlockScoutWeb.Models.UserFromAuth
   alias Explorer.Account.WatchlistAddress
-  alias Explorer.Chain.{Address, InternalTransaction, Log, Token, TokenTransfer, Transaction}
+  alias Explorer.Chain.{Address, InternalTransaction, Log, Token, TokenTransfer, Transaction, Wei}
   alias Explorer.Repo
 
   setup do
@@ -238,6 +239,7 @@ defmodule BlockScoutWeb.API.V2.TransactionControllerTest do
         block_number: tx.block_number,
         token_contract_address: token.contract_address,
         token_ids: Enum.map(0..50, fn x -> x end),
+        token_type: "ERC-1155",
         amounts: Enum.map(0..50, fn x -> x end)
       )
 
@@ -264,6 +266,7 @@ defmodule BlockScoutWeb.API.V2.TransactionControllerTest do
           block_number: tx.block_number,
           token_contract_address: token.contract_address,
           token_ids: [1],
+          token_type: "ERC-1155",
           amounts: [2],
           amount: nil
         )
@@ -574,7 +577,8 @@ defmodule BlockScoutWeb.API.V2.TransactionControllerTest do
             block: tx.block,
             block_number: tx.block_number,
             token_contract_address: erc_1155_token.contract_address,
-            token_ids: [x]
+            token_ids: [x],
+            token_type: "ERC-1155"
           )
         end
         |> Enum.reverse()
@@ -588,7 +592,8 @@ defmodule BlockScoutWeb.API.V2.TransactionControllerTest do
             block: tx.block,
             block_number: tx.block_number,
             token_contract_address: erc_721_token.contract_address,
-            token_ids: [x]
+            token_ids: [x],
+            token_type: "ERC-721"
           )
         end
         |> Enum.reverse()
@@ -601,7 +606,8 @@ defmodule BlockScoutWeb.API.V2.TransactionControllerTest do
             transaction: tx,
             block: tx.block,
             block_number: tx.block_number,
-            token_contract_address: erc_20_token.contract_address
+            token_contract_address: erc_20_token.contract_address,
+            token_type: "ERC-20"
           )
         end
         |> Enum.reverse()
@@ -716,6 +722,7 @@ defmodule BlockScoutWeb.API.V2.TransactionControllerTest do
             block_number: tx.block_number,
             token_contract_address: token.contract_address,
             token_ids: Enum.map(0..50, fn _x -> id end),
+            token_type: "ERC-1155",
             amounts: Enum.map(0..50, fn x -> x end)
           )
         end
@@ -751,7 +758,8 @@ defmodule BlockScoutWeb.API.V2.TransactionControllerTest do
             block: tx.block,
             block_number: tx.block_number,
             token_contract_address: token.contract_address,
-            token_ids: [i]
+            token_ids: [i],
+            token_type: "ERC-721"
           )
         end
 
@@ -781,6 +789,7 @@ defmodule BlockScoutWeb.API.V2.TransactionControllerTest do
           block_number: tx.block_number,
           token_contract_address: token.contract_address,
           token_ids: Enum.map(0..50, fn x -> x end),
+          token_type: "ERC-1155",
           amounts: Enum.map(0..50, fn x -> x end)
         )
 
@@ -816,6 +825,7 @@ defmodule BlockScoutWeb.API.V2.TransactionControllerTest do
           block_number: tx.block_number,
           token_contract_address: token.contract_address,
           token_ids: Enum.map(0..24, fn x -> x end),
+          token_type: "ERC-1155",
           amounts: Enum.map(0..24, fn x -> x end)
         )
 
@@ -831,6 +841,7 @@ defmodule BlockScoutWeb.API.V2.TransactionControllerTest do
           block_number: tx.block_number,
           token_contract_address: token.contract_address,
           token_ids: Enum.map(25..49, fn x -> x end),
+          token_type: "ERC-1155",
           amounts: Enum.map(25..49, fn x -> x end)
         )
 
@@ -846,6 +857,7 @@ defmodule BlockScoutWeb.API.V2.TransactionControllerTest do
           block_number: tx.block_number,
           token_contract_address: token.contract_address,
           token_ids: [50],
+          token_type: "ERC-1155",
           amounts: [50]
         )
 
@@ -872,6 +884,7 @@ defmodule BlockScoutWeb.API.V2.TransactionControllerTest do
           block_number: tx.block_number,
           token_contract_address: token.contract_address,
           token_ids: Enum.map(0..24, fn x -> x end),
+          token_type: "ERC-1155",
           amounts: Enum.map(0..24, fn x -> x end)
         )
 
@@ -887,6 +900,7 @@ defmodule BlockScoutWeb.API.V2.TransactionControllerTest do
           block_number: tx.block_number,
           token_contract_address: token.contract_address,
           token_ids: Enum.map(25..50, fn x -> x end),
+          token_type: "ERC-1155",
           amounts: Enum.map(25..50, fn x -> x end)
         )
 
@@ -951,6 +965,501 @@ defmodule BlockScoutWeb.API.V2.TransactionControllerTest do
 
       assert response = json_response(request, 200)
       assert Enum.count(response["items"]) == 3
+    end
+
+    test "does not include internal transaction with index 0", %{conn: conn} do
+      block_before = insert(:block)
+
+      transaction =
+        :transaction
+        |> insert()
+        |> with_block(status: :ok)
+
+      internal_transaction_from = insert(:address)
+      internal_transaction_to = insert(:address)
+
+      insert(:internal_transaction,
+        transaction: transaction,
+        index: 0,
+        block_number: transaction.block_number,
+        transaction_index: transaction.index,
+        block_hash: transaction.block_hash,
+        block_index: 0,
+        value: %Wei{value: Decimal.new(7)},
+        from_address_hash: internal_transaction_from.hash,
+        from_address: internal_transaction_from,
+        to_address_hash: internal_transaction_to.hash,
+        to_address: internal_transaction_to
+      )
+
+      insert(:address_coin_balance,
+        address: transaction.from_address,
+        address_hash: transaction.from_address_hash,
+        block_number: block_before.number
+      )
+
+      insert(:address_coin_balance,
+        address: transaction.to_address,
+        address_hash: transaction.to_address_hash,
+        block_number: block_before.number
+      )
+
+      insert(:address_coin_balance,
+        address: transaction.block.miner,
+        address_hash: transaction.block.miner_hash,
+        block_number: block_before.number
+      )
+
+      insert(:address_coin_balance,
+        address: internal_transaction_from,
+        address_hash: internal_transaction_from.hash,
+        block_number: block_before.number
+      )
+
+      insert(:address_coin_balance,
+        address: internal_transaction_to,
+        address_hash: internal_transaction_to.hash,
+        block_number: block_before.number
+      )
+
+      request = get(conn, "/api/v2/transactions/#{to_string(transaction.hash)}/state-changes")
+
+      assert response = json_response(request, 200)
+      assert Enum.count(response["items"]) == 3
+    end
+
+    test "return entries from internal transaction", %{conn: conn} do
+      block_before = insert(:block)
+
+      transaction =
+        :transaction
+        |> insert()
+        |> with_block(status: :ok)
+
+      internal_transaction_from = insert(:address)
+      internal_transaction_to = insert(:address)
+
+      insert(:internal_transaction,
+        transaction: transaction,
+        index: 0,
+        block_number: transaction.block_number,
+        transaction_index: transaction.index,
+        block_hash: transaction.block_hash,
+        block_index: 0,
+        value: %Wei{value: Decimal.new(7)},
+        from_address_hash: internal_transaction_from.hash,
+        from_address: internal_transaction_from,
+        to_address_hash: internal_transaction_to.hash,
+        to_address: internal_transaction_to
+      )
+
+      insert(:internal_transaction,
+        transaction: transaction,
+        index: 1,
+        block_number: transaction.block_number,
+        transaction_index: transaction.index,
+        block_hash: transaction.block_hash,
+        block_index: 1,
+        value: %Wei{value: Decimal.new(7)},
+        from_address_hash: internal_transaction_from.hash,
+        from_address: internal_transaction_from,
+        to_address_hash: internal_transaction_to.hash,
+        to_address: internal_transaction_to
+      )
+
+      insert(:address_coin_balance,
+        address: transaction.from_address,
+        address_hash: transaction.from_address_hash,
+        block_number: block_before.number
+      )
+
+      insert(:address_coin_balance,
+        address: transaction.to_address,
+        address_hash: transaction.to_address_hash,
+        block_number: block_before.number
+      )
+
+      insert(:address_coin_balance,
+        address: transaction.block.miner,
+        address_hash: transaction.block.miner_hash,
+        block_number: block_before.number
+      )
+
+      insert(:address_coin_balance,
+        address: internal_transaction_from,
+        address_hash: internal_transaction_from.hash,
+        block_number: block_before.number
+      )
+
+      insert(:address_coin_balance,
+        address: internal_transaction_to,
+        address_hash: internal_transaction_to.hash,
+        block_number: block_before.number
+      )
+
+      request = get(conn, "/api/v2/transactions/#{to_string(transaction.hash)}/state-changes")
+
+      assert response = json_response(request, 200)
+      assert Enum.count(response["items"]) == 5
+    end
+  end
+
+  if Application.compile_env(:explorer, :chain_type) == :celo do
+    describe "celo gas token" do
+      test "when gas is paid with token and token is present in db", %{conn: conn} do
+        token = insert(:token)
+
+        tx =
+          :transaction
+          |> insert(gas_token_contract_address: token.contract_address)
+          |> with_block()
+
+        request = get(conn, "/api/v2/transactions")
+
+        token_address_hash = Address.checksum(token.contract_address_hash)
+        token_type = token.type
+        token_name = token.name
+        token_symbol = token.symbol
+
+        assert %{
+                 "items" => [
+                   %{
+                     "celo" => %{
+                       "gas_token" => %{
+                         "address" => ^token_address_hash,
+                         "name" => ^token_name,
+                         "symbol" => ^token_symbol,
+                         "type" => ^token_type
+                       }
+                     }
+                   }
+                 ]
+               } = json_response(request, 200)
+
+        request = get(conn, "/api/v2/transactions/#{to_string(tx.hash)}")
+
+        assert %{
+                 "celo" => %{
+                   "gas_token" => %{
+                     "address" => ^token_address_hash,
+                     "name" => ^token_name,
+                     "symbol" => ^token_symbol,
+                     "type" => ^token_type
+                   }
+                 }
+               } = json_response(request, 200)
+
+        request = get(conn, "/api/v2/addresses/#{to_string(tx.from_address_hash)}/transactions")
+
+        assert %{
+                 "items" => [
+                   %{
+                     "celo" => %{
+                       "gas_token" => %{
+                         "address" => ^token_address_hash,
+                         "name" => ^token_name,
+                         "symbol" => ^token_symbol,
+                         "type" => ^token_type
+                       }
+                     }
+                   }
+                 ]
+               } = json_response(request, 200)
+
+        request = get(conn, "/api/v2/main-page/transactions")
+
+        assert [
+                 %{
+                   "celo" => %{
+                     "gas_token" => %{
+                       "address" => ^token_address_hash,
+                       "name" => ^token_name,
+                       "symbol" => ^token_symbol,
+                       "type" => ^token_type
+                     }
+                   }
+                 }
+               ] = json_response(request, 200)
+      end
+
+      test "when gas is paid with token and token is not present in db", %{conn: conn} do
+        unknown_token_address = insert(:address)
+
+        tx =
+          :transaction
+          |> insert(gas_token_contract_address: unknown_token_address)
+          |> with_block()
+
+        unknown_token_address_hash = Address.checksum(unknown_token_address.hash)
+
+        request = get(conn, "/api/v2/transactions")
+
+        assert %{
+                 "items" => [
+                   %{
+                     "celo" => %{
+                       "gas_token" => %{
+                         "address" => ^unknown_token_address_hash
+                       }
+                     }
+                   }
+                 ]
+               } = json_response(request, 200)
+
+        request = get(conn, "/api/v2/transactions/#{to_string(tx.hash)}")
+
+        assert %{
+                 "celo" => %{
+                   "gas_token" => %{
+                     "address" => ^unknown_token_address_hash
+                   }
+                 }
+               } = json_response(request, 200)
+
+        request = get(conn, "/api/v2/addresses/#{to_string(tx.from_address_hash)}/transactions")
+
+        assert %{
+                 "items" => [
+                   %{
+                     "celo" => %{
+                       "gas_token" => %{
+                         "address" => ^unknown_token_address_hash
+                       }
+                     }
+                   }
+                 ]
+               } = json_response(request, 200)
+
+        request = get(conn, "/api/v2/main-page/transactions")
+
+        assert [
+                 %{
+                   "celo" => %{
+                     "gas_token" => %{
+                       "address" => ^unknown_token_address_hash
+                     }
+                   }
+                 }
+               ] = json_response(request, 200)
+      end
+
+      test "when gas is paid in native coin", %{conn: conn} do
+        tx = :transaction |> insert() |> with_block()
+
+        request = get(conn, "/api/v2/transactions")
+
+        assert %{
+                 "items" => [
+                   %{
+                     "celo" => %{"gas_token" => nil}
+                   }
+                 ]
+               } = json_response(request, 200)
+
+        request = get(conn, "/api/v2/transactions/#{to_string(tx.hash)}")
+
+        assert %{
+                 "celo" => %{"gas_token" => nil}
+               } = json_response(request, 200)
+
+        request = get(conn, "/api/v2/addresses/#{to_string(tx.from_address_hash)}/transactions")
+
+        assert %{
+                 "items" => [
+                   %{
+                     "celo" => %{"gas_token" => nil}
+                   }
+                 ]
+               } = json_response(request, 200)
+
+        request = get(conn, "/api/v2/main-page/transactions")
+
+        assert [
+                 %{
+                   "celo" => %{"gas_token" => nil}
+                 }
+               ] = json_response(request, 200)
+      end
+    end
+  end
+
+  describe "/transactions/{tx_hash}/raw-trace" do
+    test "returns raw trace from node", %{conn: conn} do
+      transaction =
+        :transaction
+        |> insert()
+        |> with_block(status: :ok)
+
+      raw_trace = %{
+        "traceAddress" => [],
+        "type" => "call",
+        "callType" => "call",
+        "from" => "0xa931c862e662134b85e4dc4baf5c70cc9ba74db4",
+        "to" => "0x1469b17ebf82fedf56f04109e5207bdc4554288c",
+        "gas" => "0x8600",
+        "gasUsed" => "0x7d37",
+        "input" => "0xb118e2db0000000000000000000000000000000000000000000000000000000000000008",
+        "output" => "0x",
+        "value" => "0x174876e800",
+        "transactionHash" => to_string(transaction.hash)
+      }
+
+      expect(EthereumJSONRPC.Mox, :json_rpc, fn _, _ -> {:ok, [raw_trace]} end)
+
+      request = get(conn, "/api/v2/transactions/#{to_string(transaction.hash)}/raw-trace")
+
+      assert response = json_response(request, 200)
+      assert response == [raw_trace]
+    end
+
+    test "returns correct error", %{conn: conn} do
+      transaction =
+        :transaction
+        |> insert()
+        |> with_block(status: :ok)
+
+      expect(EthereumJSONRPC.Mox, :json_rpc, fn _, _ -> {:error, "error"} end)
+
+      request = get(conn, "/api/v2/transactions/#{to_string(transaction.hash)}/raw-trace")
+
+      assert response = json_response(request, 500)
+      assert response == "Error while raw trace fetching"
+    end
+  end
+
+  if Application.compile_env(:explorer, :chain_type) == :stability do
+    @first_topic_hex_string_1 "0x99e7b0ba56da2819c37c047f0511fd2bf6c9b4e27b4a979a19d6da0f74be8155"
+
+    defp topic(topic_hex_string) do
+      {:ok, topic} = Explorer.Chain.Hash.Full.cast(topic_hex_string)
+      topic
+    end
+
+    describe "stability fees" do
+      test "check stability fees", %{conn: conn} do
+        tx = insert(:transaction) |> with_block()
+
+        _log =
+          insert(:log,
+            transaction: tx,
+            index: 1,
+            block: tx.block,
+            block_number: tx.block_number,
+            first_topic: topic(@first_topic_hex_string_1),
+            data:
+              "0x000000000000000000000000dc2b93f3291030f3f7a6d9363ac37757f7ad5c4300000000000000000000000000000000000000000000000000002824369a100000000000000000000000000046b555cb3962bf9533c437cbd04a2f702dfdb999000000000000000000000000000000000000000000000000000014121b4d0800000000000000000000000000faf7a981360c2fab3a5ab7b3d6d8d0cf97a91eb9000000000000000000000000000000000000000000000000000014121b4d0800"
+          )
+
+        insert(:token, contract_address: build(:address, hash: "0xDc2B93f3291030F3F7a6D9363ac37757f7AD5C43"))
+        request = get(conn, "/api/v2/transactions")
+
+        assert %{
+                 "items" => [
+                   %{
+                     "stability_fee" => %{
+                       "token" => %{"address" => "0xDc2B93f3291030F3F7a6D9363ac37757f7AD5C43"},
+                       "validator_address" => %{"hash" => "0x46B555CB3962bF9533c437cBD04A2f702dfdB999"},
+                       "dapp_address" => %{"hash" => "0xFAf7a981360c2FAb3a5Ab7b3D6d8D0Cf97a91Eb9"},
+                       "total_fee" => "44136000000000",
+                       "dapp_fee" => "22068000000000",
+                       "validator_fee" => "22068000000000"
+                     }
+                   }
+                 ]
+               } = json_response(request, 200)
+
+        request = get(conn, "/api/v2/transactions/#{to_string(tx.hash)}")
+
+        assert %{
+                 "stability_fee" => %{
+                   "token" => %{"address" => "0xDc2B93f3291030F3F7a6D9363ac37757f7AD5C43"},
+                   "validator_address" => %{"hash" => "0x46B555CB3962bF9533c437cBD04A2f702dfdB999"},
+                   "dapp_address" => %{"hash" => "0xFAf7a981360c2FAb3a5Ab7b3D6d8D0Cf97a91Eb9"},
+                   "total_fee" => "44136000000000",
+                   "dapp_fee" => "22068000000000",
+                   "validator_fee" => "22068000000000"
+                 }
+               } = json_response(request, 200)
+
+        request = get(conn, "/api/v2/addresses/#{to_string(tx.from_address_hash)}/transactions")
+
+        assert %{
+                 "items" => [
+                   %{
+                     "stability_fee" => %{
+                       "token" => %{"address" => "0xDc2B93f3291030F3F7a6D9363ac37757f7AD5C43"},
+                       "validator_address" => %{"hash" => "0x46B555CB3962bF9533c437cBD04A2f702dfdB999"},
+                       "dapp_address" => %{"hash" => "0xFAf7a981360c2FAb3a5Ab7b3D6d8D0Cf97a91Eb9"},
+                       "total_fee" => "44136000000000",
+                       "dapp_fee" => "22068000000000",
+                       "validator_fee" => "22068000000000"
+                     }
+                   }
+                 ]
+               } = json_response(request, 200)
+      end
+
+      test "check stability if token absent in DB", %{conn: conn} do
+        tx = insert(:transaction) |> with_block()
+
+        _log =
+          insert(:log,
+            transaction: tx,
+            index: 1,
+            block: tx.block,
+            block_number: tx.block_number,
+            first_topic: topic(@first_topic_hex_string_1),
+            data:
+              "0x000000000000000000000000dc2b93f3291030f3f7a6d9363ac37757f7ad5c4300000000000000000000000000000000000000000000000000002824369a100000000000000000000000000046b555cb3962bf9533c437cbd04a2f702dfdb999000000000000000000000000000000000000000000000000000014121b4d0800000000000000000000000000faf7a981360c2fab3a5ab7b3d6d8d0cf97a91eb9000000000000000000000000000000000000000000000000000014121b4d0800"
+          )
+
+        request = get(conn, "/api/v2/transactions")
+
+        assert %{
+                 "items" => [
+                   %{
+                     "stability_fee" => %{
+                       "token" => %{"address" => "0xDc2B93f3291030F3F7a6D9363ac37757f7AD5C43"},
+                       "validator_address" => %{"hash" => "0x46B555CB3962bF9533c437cBD04A2f702dfdB999"},
+                       "dapp_address" => %{"hash" => "0xFAf7a981360c2FAb3a5Ab7b3D6d8D0Cf97a91Eb9"},
+                       "total_fee" => "44136000000000",
+                       "dapp_fee" => "22068000000000",
+                       "validator_fee" => "22068000000000"
+                     }
+                   }
+                 ]
+               } = json_response(request, 200)
+
+        request = get(conn, "/api/v2/transactions/#{to_string(tx.hash)}")
+
+        assert %{
+                 "stability_fee" => %{
+                   "token" => %{"address" => "0xDc2B93f3291030F3F7a6D9363ac37757f7AD5C43"},
+                   "validator_address" => %{"hash" => "0x46B555CB3962bF9533c437cBD04A2f702dfdB999"},
+                   "dapp_address" => %{"hash" => "0xFAf7a981360c2FAb3a5Ab7b3D6d8D0Cf97a91Eb9"},
+                   "total_fee" => "44136000000000",
+                   "dapp_fee" => "22068000000000",
+                   "validator_fee" => "22068000000000"
+                 }
+               } = json_response(request, 200)
+
+        request = get(conn, "/api/v2/addresses/#{to_string(tx.from_address_hash)}/transactions")
+
+        assert %{
+                 "items" => [
+                   %{
+                     "stability_fee" => %{
+                       "token" => %{"address" => "0xDc2B93f3291030F3F7a6D9363ac37757f7AD5C43"},
+                       "validator_address" => %{"hash" => "0x46B555CB3962bF9533c437cBD04A2f702dfdB999"},
+                       "dapp_address" => %{"hash" => "0xFAf7a981360c2FAb3a5Ab7b3D6d8D0Cf97a91Eb9"},
+                       "total_fee" => "44136000000000",
+                       "dapp_fee" => "22068000000000",
+                       "validator_fee" => "22068000000000"
+                     }
+                   }
+                 ]
+               } = json_response(request, 200)
+      end
     end
   end
 

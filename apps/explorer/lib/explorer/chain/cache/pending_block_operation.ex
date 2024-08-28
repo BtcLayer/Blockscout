@@ -28,7 +28,7 @@ defmodule Explorer.Chain.Cache.PendingBlockOperation do
     if is_nil(cached_value) do
       count = Helper.estimated_count_from("pending_block_operations")
 
-      max(count, 0)
+      if is_nil(count), do: 0, else: max(count, 0)
     else
       cached_value
     end
@@ -46,7 +46,7 @@ defmodule Explorer.Chain.Cache.PendingBlockOperation do
     # If this gets called it means an async task was requested, but none exists
     # so a new one needs to be launched
     {:ok, task} =
-      Task.start(fn ->
+      Task.start_link(fn ->
         try do
           result = Repo.aggregate(PendingBlockOperation, :count, timeout: :infinity)
 
